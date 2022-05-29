@@ -3,65 +3,106 @@ import {Canvas} from "./Canvas.js"
 type Vector2D = [number, number]
 
 class Grid {
-    constructor(public tileWidth: number, public tileHeight: number, public areaWidth: number, public areaHeight: number) { }
+    constructor(
+        private canvas: Canvas,
+        public tileWidth: number,
+        public tileHeight: number
+    ) { }
+
+    get areaWidth() {
+        return this.canvas.el.width
+    }
+
+    get areaHeight() {
+        return this.canvas.el.height
+    }
 }
 
 class Camera {
+    public zoom: number = 1;
+    public orbit: number = 0;
     constructor(public grid: Grid) { }
 
-    get a() { return 0.5 * this.grid.tileWidth }
-    get b() { return 0.25 * this.grid.tileHeight }
-    get c() { return -0.5 * this.grid.tileWidth }
-    get d() { return 0.25 * this.grid.tileHeight }
+    project(x: number, y: number): Vector2D {
+        let rotatedX = (x * this.rotateTransform[0][0]) + (y * this.rotateTransform[1][0])
+        let rotatedY = (x * this.rotateTransform[0][1]) + (y * this.rotateTransform[1][1])
 
-    get determinant() {
-        return 1 / ((this.a * this.d) - (this.b * this.c))
+        let zoomedX = (rotatedX * this.zoomTransform[0][0]) + (rotatedY * this.zoomTransform[1][0]) + this.xOffset
+        let zoomedY = (rotatedX * this.zoomTransform[0][1]) + (rotatedY * this.zoomTransform[1][1]) + this.yOffset
+
+        return [zoomedX, zoomedY]
     }
 
-    get transform() {
+    inverseProject(x: number, y: number): Vector2D {
+        let unzoomedX = ((x - this.xOffset) * this.zoomTransformInv[0][0]) + ((y - this.yOffset) * this.zoomTransformInv[1][0])
+        let unzoomedY = ((x - this.xOffset) * this.zoomTransformInv[0][1]) + ((y - this.yOffset) * this.zoomTransformInv[1][1])
+
+        let unrotatedX = (unzoomedX * this.rotateTransformInv[0][0]) + (unzoomedY * this.rotateTransformInv[1][0])
+        let unrotatedY = (unzoomedX * this.rotateTransformInv[0][1]) + (unzoomedY * this.rotateTransformInv[1][1])
+
+        return [unrotatedX, unrotatedY]
+    }
+
+    private get a() { return 0.5 * this.grid.tileWidth * this.zoom }
+    private get b() { return 0.25 * this.grid.tileHeight * this.zoom }
+    private get c() { return -0.5 * this.grid.tileWidth * this.zoom }
+    private get d() { return 0.25 * this.grid.tileHeight * this.zoom }
+
+    private get ra () { return Math.cos(this.orbit) }
+    private get rb () { return Math.sin(this.orbit) }
+    private get rc () { return -Math.sin(this.orbit) }
+    private get rd () { return Math.cos(this.orbit) }
+
+    private getDeterminant(a: number, b: number, c: number, d: number) {
+        return 1 / ((a * d) - (b * c))
+    }
+
+    private get zoomTransform() {
         return [
             [this.a, this.b],
             [this.c, this.d]
         ]
     }
 
-    get transformInv() {
+    private get zoomTransformInv() {
+        const determinant = this.getDeterminant(this.a, this.b, this.c, this.d);
         return [
-            [this.determinant * this.d, this.determinant * -this.b],
-            [this.determinant * -this.c, this.determinant * this.a]
+            [determinant * this.d, determinant * -this.b],
+            [determinant * -this.c, determinant * this.a]
         ]
     }
 
-    get xOffset() { return (this.grid.areaWidth - (this.grid.tileWidth / 2)) / 2 }
-
-    project(x: number, y: number): Vector2D {
-        let newX = (x * this.transform[0][0]) + (y * this.transform[1][0]) + this.xOffset
-        let newY = (x * this.transform[0][1]) + (y * this.transform[1][1])
-
-        return [newX, newY]
+    private get rotateTransform() {
+        return [
+            [this.ra, this.rb],
+            [this.rc, this.rd]
+        ]
     }
 
-    inverseProject(x: number, y: number): Vector2D {
-        let newX = ((x - this.xOffset) * this.transformInv[0][0]) + (y * this.transformInv[1][0])
-        let newY = ((x - this.xOffset) * this.transformInv[0][1]) + (y * this.transformInv[1][1])
-
-        return [newX, newY]
+    private get rotateTransformInv() {
+        const determinant = this.getDeterminant(this.ra, this.rb, this.rc, this.rd);
+        return [
+            [determinant * this.rd, determinant * -this.rb],
+            [determinant * -this.rc, determinant * this.ra]
+        ]
     }
+
+    private get xOffset() { return (this.grid.areaWidth - (this.grid.tileWidth / 2)) / 2 }
+    private get yOffset() { return (this.grid.areaHeight - (this.grid.tileHeight / 2)) / 2 }
 }
 
 class Tile {
-    public camera: Camera
     public xOffset: number = 0
     public yOffset: number = 0
+    public fillStyle: string = `rgba(${Math.round(Math.random() * 255)}, ${Math.round(Math.random() * 255)}, ${Math.round(Math.random() * 255)})`
     constructor(
         private canvas: Canvas,
+        private camera: Camera,
         public x: number,
         public y: number,
         public height: number = 1,
         public width: number = 1
     ) {
-        this.camera = new Camera(new Grid(100, 100, canvas.el.width, canvas.el.height))
-
         this.canvas.el.addEventListener('mousemove', (event: MouseEvent) => {
             const {clientX, clientY, target} = event
             const canvasArea = (target as HTMLCanvasElement).getBoundingClientRect()
@@ -69,8 +110,6 @@ class Tile {
             const y = clientY - canvasArea.top
 
             const tile = this.camera.inverseProject(x, y).map(d => Math.floor(d))
-
-
 
             if (this.isPointInside(tile[0], tile[1])) {
                 this.lift()
@@ -83,13 +122,14 @@ class Tile {
     draw() {
         const visualX = this.x + this.xOffset
         const visualY = this.y + this.yOffset
+        this.canvas.ctx.fillStyle = this.fillStyle
         this.canvas.ctx.beginPath()
         this.canvas.ctx.moveTo(...this.camera.project(visualX, visualY))
         this.canvas.ctx.lineTo(...this.camera.project(visualX + this.width, visualY))
         this.canvas.ctx.lineTo(...this.camera.project(visualX + this.width, visualY + this.height))
         this.canvas.ctx.lineTo(...this.camera.project(visualX, visualY + this.height))
         this.canvas.ctx.lineTo(...this.camera.project(visualX, visualY))
-        this.canvas.ctx.stroke()
+        this.canvas.ctx.fill()
     }
 
     isPointInside (x: number, y: number) {
@@ -120,7 +160,13 @@ class Painter {
     constructor(public tiles: Tile[], public canvas: Canvas) { }
 
     start() {
-        setInterval(() => requestAnimationFrame(this.draw.bind(this)), 16)
+        let i = 0
+        setInterval(() => {
+            i++
+            requestAnimationFrame(this.draw.bind(this))
+            camera.orbit = Math.sin(i / 100)
+            camera.zoom = (Math.sin(i / 100) + 1.5)
+        }, 16)
     }
 
     draw() {
@@ -132,17 +178,16 @@ class Painter {
 }
 
 const canvas = new Canvas(document.querySelector('canvas'))
-/*const tiles = [
-    new Tile(canvas, 0, 0),
-    new Tile(canvas, 1, -1),
-    new Tile(canvas, 2, -1),
-    new Tile(canvas, 3, 3),
-]*/
-const source: Array<Array<''>> = Array(10).fill(Array(10).fill(''))
-const tiles = source.flatMap((row, x) => row.map((_, y) => new Tile(canvas, x, y)))
+const grid = new Grid(canvas, 100, 100)
+const camera = new Camera(grid)
 
-tiles[32].height = 2
-delete tiles[33]
+const source: Array<Array<''>> = Array(10).fill(Array(10).fill(''))
+const tiles = source.flatMap((row, x) => {
+    return row.map((_, y) => {
+        return new Tile(canvas, camera, x - 5, y - 5)
+    })
+})
+
 const painter = new Painter(tiles, canvas)
 
 painter.start()

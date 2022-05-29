@@ -1,58 +1,89 @@
 import { Canvas } from "./Canvas.js";
 class Grid {
-    constructor(tileWidth, tileHeight, areaWidth, areaHeight) {
+    constructor(canvas, tileWidth, tileHeight) {
+        this.canvas = canvas;
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
-        this.areaWidth = areaWidth;
-        this.areaHeight = areaHeight;
+    }
+    get areaWidth() {
+        return this.canvas.el.width;
+    }
+    get areaHeight() {
+        return this.canvas.el.height;
     }
 }
 class Camera {
     constructor(grid) {
         this.grid = grid;
+        this.zoom = 1;
+        this.orbit = 0;
     }
-    get a() { return 0.5 * this.grid.tileWidth; }
-    get b() { return 0.25 * this.grid.tileHeight; }
-    get c() { return -0.5 * this.grid.tileWidth; }
-    get d() { return 0.25 * this.grid.tileHeight; }
-    get determinant() {
-        return 1 / ((this.a * this.d) - (this.b * this.c));
+    project(x, y) {
+        let rotatedX = (x * this.rotateTransform[0][0]) + (y * this.rotateTransform[1][0]);
+        let rotatedY = (x * this.rotateTransform[0][1]) + (y * this.rotateTransform[1][1]);
+        let zoomedX = (rotatedX * this.zoomTransform[0][0]) + (rotatedY * this.zoomTransform[1][0]) + this.xOffset;
+        let zoomedY = (rotatedX * this.zoomTransform[0][1]) + (rotatedY * this.zoomTransform[1][1]) + this.yOffset;
+        return [zoomedX, zoomedY];
     }
-    get transform() {
+    inverseProject(x, y) {
+        let unzoomedX = ((x - this.xOffset) * this.zoomTransformInv[0][0]) + ((y - this.yOffset) * this.zoomTransformInv[1][0]);
+        let unzoomedY = ((x - this.xOffset) * this.zoomTransformInv[0][1]) + ((y - this.yOffset) * this.zoomTransformInv[1][1]);
+        let unrotatedX = (unzoomedX * this.rotateTransformInv[0][0]) + (unzoomedY * this.rotateTransformInv[1][0]);
+        let unrotatedY = (unzoomedX * this.rotateTransformInv[0][1]) + (unzoomedY * this.rotateTransformInv[1][1]);
+        return [unrotatedX, unrotatedY];
+    }
+    get a() { return 0.5 * this.grid.tileWidth * this.zoom; }
+    get b() { return 0.25 * this.grid.tileHeight * this.zoom; }
+    get c() { return -0.5 * this.grid.tileWidth * this.zoom; }
+    get d() { return 0.25 * this.grid.tileHeight * this.zoom; }
+    get ra() { return Math.cos(this.orbit); }
+    get rb() { return Math.sin(this.orbit); }
+    get rc() { return -Math.sin(this.orbit); }
+    get rd() { return Math.cos(this.orbit); }
+    getDeterminant(a, b, c, d) {
+        return 1 / ((a * d) - (b * c));
+    }
+    get zoomTransform() {
         return [
             [this.a, this.b],
             [this.c, this.d]
         ];
     }
-    get transformInv() {
+    get zoomTransformInv() {
+        const determinant = this.getDeterminant(this.a, this.b, this.c, this.d);
         return [
-            [this.determinant * this.d, this.determinant * -this.b],
-            [this.determinant * -this.c, this.determinant * this.a]
+            [determinant * this.d, determinant * -this.b],
+            [determinant * -this.c, determinant * this.a]
+        ];
+    }
+    get rotateTransform() {
+        return [
+            [this.ra, this.rb],
+            [this.rc, this.rd]
+        ];
+    }
+    get rotateTransformInv() {
+        const determinant = this.getDeterminant(this.ra, this.rb, this.rc, this.rd);
+        return [
+            [determinant * this.rd, determinant * -this.rb],
+            [determinant * -this.rc, determinant * this.ra]
         ];
     }
     get xOffset() { return (this.grid.areaWidth - (this.grid.tileWidth / 2)) / 2; }
-    project(x, y) {
-        let newX = (x * this.transform[0][0]) + (y * this.transform[1][0]) + this.xOffset;
-        let newY = (x * this.transform[0][1]) + (y * this.transform[1][1]);
-        return [newX, newY];
-    }
-    inverseProject(x, y) {
-        let newX = ((x - this.xOffset) * this.transformInv[0][0]) + (y * this.transformInv[1][0]);
-        let newY = ((x - this.xOffset) * this.transformInv[0][1]) + (y * this.transformInv[1][1]);
-        return [newX, newY];
-    }
+    get yOffset() { return (this.grid.areaHeight - (this.grid.tileHeight / 2)) / 2; }
 }
 class Tile {
-    constructor(canvas, x, y, height = 1, width = 1) {
+    constructor(canvas, camera, x, y, height = 1, width = 1) {
         this.canvas = canvas;
+        this.camera = camera;
         this.x = x;
         this.y = y;
         this.height = height;
         this.width = width;
         this.xOffset = 0;
         this.yOffset = 0;
+        this.fillStyle = `rgba(${Math.round(Math.random() * 255)}, ${Math.round(Math.random() * 255)}, ${Math.round(Math.random() * 255)})`;
         this.isLifted = false;
-        this.camera = new Camera(new Grid(100, 100, canvas.el.width, canvas.el.height));
         this.canvas.el.addEventListener('mousemove', (event) => {
             const { clientX, clientY, target } = event;
             const canvasArea = target.getBoundingClientRect();
@@ -70,13 +101,14 @@ class Tile {
     draw() {
         const visualX = this.x + this.xOffset;
         const visualY = this.y + this.yOffset;
+        this.canvas.ctx.fillStyle = this.fillStyle;
         this.canvas.ctx.beginPath();
         this.canvas.ctx.moveTo(...this.camera.project(visualX, visualY));
         this.canvas.ctx.lineTo(...this.camera.project(visualX + this.width, visualY));
         this.canvas.ctx.lineTo(...this.camera.project(visualX + this.width, visualY + this.height));
         this.canvas.ctx.lineTo(...this.camera.project(visualX, visualY + this.height));
         this.canvas.ctx.lineTo(...this.camera.project(visualX, visualY));
-        this.canvas.ctx.stroke();
+        this.canvas.ctx.fill();
     }
     isPointInside(x, y) {
         return ((x >= this.x && x < (this.x + this.width)) &&
@@ -103,7 +135,13 @@ class Painter {
         this.canvas = canvas;
     }
     start() {
-        setInterval(() => requestAnimationFrame(this.draw.bind(this)), 16);
+        let i = 0;
+        setInterval(() => {
+            i++;
+            requestAnimationFrame(this.draw.bind(this));
+            camera.orbit = Math.sin(i / 100);
+            camera.zoom = (Math.sin(i / 100) + 1.5);
+        }, 16);
     }
     draw() {
         this.canvas.ctx.clearRect(0, 0, 700, 500);
@@ -113,10 +151,14 @@ class Painter {
     }
 }
 const canvas = new Canvas(document.querySelector('canvas'));
+const grid = new Grid(canvas, 100, 100);
+const camera = new Camera(grid);
 const source = Array(10).fill(Array(10).fill(''));
-const tiles = source.flatMap((row, x) => row.map((_, y) => new Tile(canvas, x, y)));
-tiles[32].height = 2;
-delete tiles[33];
+const tiles = source.flatMap((row, x) => {
+    return row.map((_, y) => {
+        return new Tile(canvas, camera, x - 5, y - 5);
+    });
+});
 const painter = new Painter(tiles, canvas);
 painter.start();
 //# sourceMappingURL=index.js.map
