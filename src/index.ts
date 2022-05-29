@@ -53,7 +53,7 @@ class Camera {
     private get rc () { return -Math.sin(this.orbit) }
     private get rd () { return Math.cos(this.orbit) }
 
-    private getDeterminant(a: number, b: number, c: number, d: number) {
+    private static getDeterminant(a: number, b: number, c: number, d: number) {
         return 1 / ((a * d) - (b * c))
     }
 
@@ -65,7 +65,7 @@ class Camera {
     }
 
     private get zoomTransformInv() {
-        const determinant = this.getDeterminant(this.a, this.b, this.c, this.d);
+        const determinant = Camera.getDeterminant(this.a, this.b, this.c, this.d);
         return [
             [determinant * this.d, determinant * -this.b],
             [determinant * -this.c, determinant * this.a]
@@ -80,7 +80,7 @@ class Camera {
     }
 
     private get rotateTransformInv() {
-        const determinant = this.getDeterminant(this.ra, this.rb, this.rc, this.rd);
+        const determinant = Camera.getDeterminant(this.ra, this.rb, this.rc, this.rd);
         return [
             [determinant * this.rd, determinant * -this.rb],
             [determinant * -this.rc, determinant * this.ra]
@@ -130,6 +130,7 @@ class Tile {
         this.canvas.ctx.lineTo(...this.camera.project(visualX, visualY + this.height))
         this.canvas.ctx.lineTo(...this.camera.project(visualX, visualY))
         this.canvas.ctx.fill()
+        this.canvas.ctx.stroke()
     }
 
     isPointInside (x: number, y: number) {
@@ -164,8 +165,8 @@ class Painter {
         setInterval(() => {
             i++
             requestAnimationFrame(this.draw.bind(this))
-            camera.orbit = Math.sin(i / 100)
-            camera.zoom = (Math.sin(i / 100) + 1.5)
+            camera.orbit = Math.sin(i / 50)
+            camera.zoom = (Math.sin(i / 50) + 1.5)
         }, 16)
     }
 
