@@ -1,9 +1,11 @@
-import {Tile} from "./Tile.js"
 import {Canvas} from "./Canvas.js"
+import {Tile} from "./Tile.js"
 
 export class Painter {
-    constructor(public tiles: Tile[], public canvas: Canvas) {
-    }
+    constructor(
+        private canvas: Canvas,
+        public tiles: Tile[]
+    ) { }
 
     start() {
         let i = 0
@@ -18,7 +20,7 @@ export class Painter {
     }
 
     draw() {
-        this.canvas.ctx.clearRect(0, 0, this.canvas.el.width, this.canvas.el.height)
+        this.canvas.ctx.clearRect(0, 0, this.canvas.areaWidth, this.canvas.areaHeight)
         this.tiles.sort((tileA, tileB) => {
             return tileA.elevation - tileB.elevation
         }).forEach(tile => {

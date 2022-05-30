@@ -1,4 +1,4 @@
-import {Grid} from "./Grid.js"
+import {Canvas} from "./Canvas.js"
 
 export type Vector2D = [number, number]
 
@@ -6,7 +6,7 @@ export class Camera {
     public zoom: number = 1;
     public orbit: number = 0;
 
-    constructor(public grid: Grid) {
+    constructor(public canvas: Canvas) {
     }
 
     project(x: number, y: number, elevation: number = 0): Vector2D {
@@ -30,19 +30,19 @@ export class Camera {
     }
 
     private get a() {
-        return 0.5 * this.grid.tileWidth * this.zoom
+        return 0.5 * this.canvas.settings.tileWidth * this.zoom
     }
 
     private get b() {
-        return 0.25 * this.grid.tileHeight * this.zoom
+        return 0.25 * this.canvas.settings.tileHeight * this.zoom
     }
 
     private get c() {
-        return -0.5 * this.grid.tileWidth * this.zoom
+        return -0.5 * this.canvas.settings.tileWidth * this.zoom
     }
 
     private get d() {
-        return 0.25 * this.grid.tileHeight * this.zoom
+        return 0.25 * this.canvas.settings.tileHeight * this.zoom
     }
 
     private get ra() {
@@ -96,10 +96,10 @@ export class Camera {
     }
 
     private get xOffset() {
-        return (this.grid.areaWidth - (this.grid.tileWidth / 2)) / 2
+        return (this.canvas.areaWidth - (this.canvas.settings.tileWidth / 2)) / 2
     }
 
     private get yOffset() {
-        return (this.grid.areaHeight - (this.grid.tileHeight / 2)) / 2
+        return (this.canvas.areaHeight - (this.canvas.settings.tileHeight / 2)) / 2
     }
 }

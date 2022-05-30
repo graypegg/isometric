@@ -1,12 +1,13 @@
 import {Canvas} from "./Canvas.js"
-import {Camera} from "./Camera.js";
-import {Grid} from "./Grid.js";
-import {Tile} from "./Tile.js";
-import {Painter} from "./Painter.js";
+import {Camera} from "./Camera.js"
+import {Tile} from "./Tile.js"
+import {Painter} from "./Painter.js"
 
-const canvas = new Canvas(document.querySelector('canvas'))
-const grid = new Grid(canvas, 45, 45)
-const camera = new Camera(grid)
+const canvas = new Canvas(document.querySelector('canvas'), {
+    tileWidth: 45,
+    tileHeight: 45
+})
+const camera = new Camera(canvas)
 
 const source: Array<Array<''>> = Array(40).fill(Array(40).fill(''))
 const tiles = source.flatMap((row, x) => {
@@ -15,6 +16,6 @@ const tiles = source.flatMap((row, x) => {
     })
 })
 
-const painter = new Painter(tiles, canvas)
+const painter = new Painter(canvas, tiles)
 
 painter.start()

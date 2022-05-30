@@ -1,6 +1,6 @@
 export class Camera {
-    constructor(grid) {
-        this.grid = grid;
+    constructor(canvas) {
+        this.canvas = canvas;
         this.zoom = 1;
         this.orbit = 0;
     }
@@ -19,16 +19,16 @@ export class Camera {
         return [unrotatedX, unrotatedY];
     }
     get a() {
-        return 0.5 * this.grid.tileWidth * this.zoom;
+        return 0.5 * this.canvas.settings.tileWidth * this.zoom;
     }
     get b() {
-        return 0.25 * this.grid.tileHeight * this.zoom;
+        return 0.25 * this.canvas.settings.tileHeight * this.zoom;
     }
     get c() {
-        return -0.5 * this.grid.tileWidth * this.zoom;
+        return -0.5 * this.canvas.settings.tileWidth * this.zoom;
     }
     get d() {
-        return 0.25 * this.grid.tileHeight * this.zoom;
+        return 0.25 * this.canvas.settings.tileHeight * this.zoom;
     }
     get ra() {
         return Math.cos(this.orbit);
@@ -72,10 +72,10 @@ export class Camera {
         ];
     }
     get xOffset() {
-        return (this.grid.areaWidth - (this.grid.tileWidth / 2)) / 2;
+        return (this.canvas.areaWidth - (this.canvas.settings.tileWidth / 2)) / 2;
     }
     get yOffset() {
-        return (this.grid.areaHeight - (this.grid.tileHeight / 2)) / 2;
+        return (this.canvas.areaHeight - (this.canvas.settings.tileHeight / 2)) / 2;
     }
 }
 //# sourceMappingURL=Camera.js.map

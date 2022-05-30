@@ -1,7 +1,7 @@
 export class Painter {
-    constructor(tiles, canvas) {
-        this.tiles = tiles;
+    constructor(canvas, tiles) {
         this.canvas = canvas;
+        this.tiles = tiles;
     }
     start() {
         let i = 0;
@@ -11,7 +11,7 @@ export class Painter {
         }, 16);
     }
     draw() {
-        this.canvas.ctx.clearRect(0, 0, this.canvas.el.width, this.canvas.el.height);
+        this.canvas.ctx.clearRect(0, 0, this.canvas.areaWidth, this.canvas.areaHeight);
         this.tiles.sort((tileA, tileB) => {
             return tileA.elevation - tileB.elevation;
         }).forEach(tile => {
