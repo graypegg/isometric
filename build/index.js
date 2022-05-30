@@ -18,18 +18,26 @@ class Camera {
         this.zoom = 1;
         this.orbit = 0;
     }
-    project(x, y) {
-        let rotatedX = (x * this.rotateTransform[0][0]) + (y * this.rotateTransform[1][0]);
-        let rotatedY = (x * this.rotateTransform[0][1]) + (y * this.rotateTransform[1][1]);
+    project(x, y, elevation = 0) {
+        let raisedA = x - (elevation * this.rotateTransform[0][0]);
+        let raisedB = x - (elevation * this.rotateTransform[0][1]);
+        let raisedC = y - (elevation * this.rotateTransform[1][0]);
+        let raisedD = y - (elevation * this.rotateTransform[1][1]);
+        let rotatedX = (raisedA * this.rotateTransform[0][0]) + (raisedC * this.rotateTransform[1][0]);
+        let rotatedY = (raisedB * this.rotateTransform[0][1]) + (raisedD * this.rotateTransform[1][1]);
         let zoomedX = (rotatedX * this.zoomTransform[0][0]) + (rotatedY * this.zoomTransform[1][0]) + this.xOffset;
         let zoomedY = (rotatedX * this.zoomTransform[0][1]) + (rotatedY * this.zoomTransform[1][1]) + this.yOffset;
         return [zoomedX, zoomedY];
     }
-    inverseProject(x, y) {
+    inverseProject(x, y, elevation = 0) {
         let unzoomedX = ((x - this.xOffset) * this.zoomTransformInv[0][0]) + ((y - this.yOffset) * this.zoomTransformInv[1][0]);
         let unzoomedY = ((x - this.xOffset) * this.zoomTransformInv[0][1]) + ((y - this.yOffset) * this.zoomTransformInv[1][1]);
-        let unrotatedX = (unzoomedX * this.rotateTransformInv[0][0]) + (unzoomedY * this.rotateTransformInv[1][0]);
-        let unrotatedY = (unzoomedX * this.rotateTransformInv[0][1]) + (unzoomedY * this.rotateTransformInv[1][1]);
+        let raisedA = unzoomedX + (elevation * this.rotateTransformInv[0][0]);
+        let raisedB = unzoomedX + (elevation * this.rotateTransformInv[0][1]);
+        let raisedC = unzoomedY + (elevation * this.rotateTransformInv[1][0]);
+        let raisedD = unzoomedY + (elevation * this.rotateTransformInv[1][1]);
+        let unrotatedX = (this.rotateTransformInv[0][0] * raisedA) + (this.rotateTransformInv[1][0] * raisedC);
+        let unrotatedY = (this.rotateTransformInv[0][1] * raisedB) + (this.rotateTransformInv[1][1] * raisedD);
         return [unrotatedX, unrotatedY];
     }
     get a() { return 0.5 * this.grid.tileWidth * this.zoom; }
@@ -73,23 +81,22 @@ class Camera {
     get yOffset() { return (this.grid.areaHeight - (this.grid.tileHeight / 2)) / 2; }
 }
 class Tile {
-    constructor(canvas, camera, x, y, height = 1, width = 1) {
+    constructor(canvas, camera, x, y, height = 1, width = 1, elevation = Math.random()) {
         this.canvas = canvas;
         this.camera = camera;
         this.x = x;
         this.y = y;
         this.height = height;
         this.width = width;
-        this.xOffset = 0;
-        this.yOffset = 0;
-        this.fillStyle = `rgba(${Math.round(Math.random() * 255)}, ${Math.round(Math.random() * 255)}, ${Math.round(Math.random() * 255)})`;
+        this.elevation = elevation;
+        this.i = this.x * 10 + this.y * 10;
         this.isLifted = false;
         this.canvas.el.addEventListener('mousemove', (event) => {
             const { clientX, clientY, target } = event;
             const canvasArea = target.getBoundingClientRect();
             const x = clientX - canvasArea.left;
             const y = clientY - canvasArea.top;
-            const tile = this.camera.inverseProject(x, y).map(d => Math.floor(d));
+            const tile = this.camera.inverseProject(x, y, this.elevation).map(d => Math.floor(d));
             if (this.isPointInside(tile[0], tile[1])) {
                 this.lift();
             }
@@ -99,17 +106,16 @@ class Tile {
         });
     }
     draw() {
-        const visualX = this.x + this.xOffset;
-        const visualY = this.y + this.yOffset;
-        this.canvas.ctx.fillStyle = this.fillStyle;
+        this.canvas.ctx.fillStyle = this.isLifted ? '#a19988' : '#8899a1';
         this.canvas.ctx.beginPath();
-        this.canvas.ctx.moveTo(...this.camera.project(visualX, visualY));
-        this.canvas.ctx.lineTo(...this.camera.project(visualX + this.width, visualY));
-        this.canvas.ctx.lineTo(...this.camera.project(visualX + this.width, visualY + this.height));
-        this.canvas.ctx.lineTo(...this.camera.project(visualX, visualY + this.height));
-        this.canvas.ctx.lineTo(...this.camera.project(visualX, visualY));
+        this.canvas.ctx.moveTo(...this.camera.project(this.x, this.y, this.elevation));
+        this.canvas.ctx.lineTo(...this.camera.project(this.x + this.width, this.y, this.elevation));
+        this.canvas.ctx.lineTo(...this.camera.project(this.x + this.width, this.y + this.height, this.elevation));
+        this.canvas.ctx.lineTo(...this.camera.project(this.x, this.y + this.height, this.elevation));
+        this.canvas.ctx.lineTo(...this.camera.project(this.x, this.y, this.elevation));
         this.canvas.ctx.fill();
         this.canvas.ctx.stroke();
+        this.elevation = Math.sin(this.i++ / 30);
     }
     isPointInside(x, y) {
         return ((x >= this.x && x < (this.x + this.width)) &&
@@ -118,15 +124,11 @@ class Tile {
     lift() {
         if (this.isLifted)
             return;
-        this.xOffset -= 0.25;
-        this.yOffset -= 0.25;
         this.isLifted = true;
     }
     drop() {
         if (!this.isLifted)
             return;
-        this.xOffset += 0.25;
-        this.yOffset += 0.25;
         this.isLifted = false;
     }
 }
@@ -146,7 +148,9 @@ class Painter {
     }
     draw() {
         this.canvas.ctx.clearRect(0, 0, 700, 500);
-        this.tiles.forEach(tile => {
+        this.tiles.sort((tileA, tileB) => {
+            return tileA.elevation - tileB.elevation;
+        }).forEach(tile => {
             tile.draw();
         });
     }
