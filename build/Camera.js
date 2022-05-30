@@ -19,16 +19,16 @@ export class Camera {
         return [unrotatedX, unrotatedY];
     }
     get a() {
-        return 0.5 * this.canvas.settings.tileWidth * this.zoom;
+        return 0.5 * this.canvas.settings.unitWidth * this.zoom;
     }
     get b() {
-        return 0.25 * this.canvas.settings.tileHeight * this.zoom;
+        return 0.25 * this.canvas.settings.unitHeight * this.zoom;
     }
     get c() {
-        return -0.5 * this.canvas.settings.tileWidth * this.zoom;
+        return -0.5 * this.canvas.settings.unitWidth * this.zoom;
     }
     get d() {
-        return 0.25 * this.canvas.settings.tileHeight * this.zoom;
+        return 0.25 * this.canvas.settings.unitHeight * this.zoom;
     }
     get ra() {
         return Math.cos(this.orbit);
@@ -72,10 +72,10 @@ export class Camera {
         ];
     }
     get xOffset() {
-        return (this.canvas.areaWidth - (this.canvas.settings.tileWidth / 2)) / 2;
+        return (this.canvas.areaWidth - (this.canvas.settings.unitWidth / 2)) / 2;
     }
     get yOffset() {
-        return (this.canvas.areaHeight - (this.canvas.settings.tileHeight / 2)) / 2;
+        return (this.canvas.areaHeight - (this.canvas.settings.unitHeight / 2)) / 2;
     }
 }
 //# sourceMappingURL=Camera.js.map

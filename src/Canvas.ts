@@ -1,11 +1,11 @@
 export interface IsoSettings {
-    tileWidth: number;
-    tileHeight: number;
+    unitWidth: number;
+    unitHeight: number;
 }
 
 const DEFAULT_ISO_SETTINGS = {
-    tileWidth: 25,
-    tileHeight: 25
+    unitWidth: 25,
+    unitHeight: 25
 };
 
 export class Canvas {
@@ -21,7 +21,7 @@ export class Canvas {
         settings: Partial<IsoSettings> = {}
     ) {
         this.ctx = el.getContext('2d');
-        this.settings = Object.assign({}, settings, DEFAULT_ISO_SETTINGS);
+        this.settings = Object.assign({}, DEFAULT_ISO_SETTINGS, settings);
 
         el.addEventListener('mousemove', (event) => {
             const {clientX, clientY} = event

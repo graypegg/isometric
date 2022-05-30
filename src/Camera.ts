@@ -9,6 +9,7 @@ export class Camera {
     constructor(public canvas: Canvas) {
     }
 
+    /* map a real canvas point to a projected plane */
     project(x: number, y: number, elevation: number = 0): Vector2D {
         let rotatedX = (x * this.rotateTransform[0][0] - elevation) + (y * this.rotateTransform[1][0] - elevation)
         let rotatedY = (x * this.rotateTransform[0][1] - elevation) + (y * this.rotateTransform[1][1] - elevation)
@@ -29,35 +30,35 @@ export class Camera {
         return [unrotatedX, unrotatedY]
     }
 
-    private get a() {
-        return 0.5 * this.canvas.settings.tileWidth * this.zoom
+    get a() {
+        return 0.5 * this.canvas.settings.unitWidth * this.zoom
     }
 
-    private get b() {
-        return 0.25 * this.canvas.settings.tileHeight * this.zoom
+    get b() {
+        return 0.25 * this.canvas.settings.unitHeight * this.zoom
     }
 
-    private get c() {
-        return -0.5 * this.canvas.settings.tileWidth * this.zoom
+    get c() {
+        return -0.5 * this.canvas.settings.unitWidth * this.zoom
     }
 
-    private get d() {
-        return 0.25 * this.canvas.settings.tileHeight * this.zoom
+    get d() {
+        return 0.25 * this.canvas.settings.unitHeight * this.zoom
     }
 
-    private get ra() {
+    get ra() {
         return Math.cos(this.orbit)
     }
 
-    private get rb() {
+    get rb() {
         return Math.sin(this.orbit)
     }
 
-    private get rc() {
+    get rc() {
         return -Math.sin(this.orbit)
     }
 
-    private get rd() {
+    get rd() {
         return Math.cos(this.orbit)
     }
 
@@ -96,10 +97,10 @@ export class Camera {
     }
 
     private get xOffset() {
-        return (this.canvas.areaWidth - (this.canvas.settings.tileWidth / 2)) / 2
+        return (this.canvas.areaWidth - (this.canvas.settings.unitWidth / 2)) / 2
     }
 
     private get yOffset() {
-        return (this.canvas.areaHeight - (this.canvas.settings.tileHeight / 2)) / 2
+        return (this.canvas.areaHeight - (this.canvas.settings.unitHeight / 2)) / 2
     }
 }

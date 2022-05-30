@@ -3,8 +3,8 @@ import {Camera} from "./Camera.js"
 
 export class Tile {
     constructor(
-        private canvas: Canvas,
-        private camera: Camera,
+        public readonly canvas: Canvas,
+        public readonly camera: Camera,
         public x: number,
         public y: number,
         public elevation: number = 0,

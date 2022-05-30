@@ -1,6 +1,6 @@
 const DEFAULT_ISO_SETTINGS = {
-    tileWidth: 25,
-    tileHeight: 25
+    unitWidth: 25,
+    unitHeight: 25
 };
 export class Canvas {
     constructor(el, settings = {}) {
@@ -10,7 +10,7 @@ export class Canvas {
             y: 0
         };
         this.ctx = el.getContext('2d');
-        this.settings = Object.assign({}, settings, DEFAULT_ISO_SETTINGS);
+        this.settings = Object.assign({}, DEFAULT_ISO_SETTINGS, settings);
         el.addEventListener('mousemove', (event) => {
             const { clientX, clientY } = event;
             const canvasArea = el.getBoundingClientRect();
