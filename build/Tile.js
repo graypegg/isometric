@@ -8,6 +8,7 @@ export class Tile {
         this.height = height;
         this.width = width;
         this.isLifted = false;
+        this.oldElevation = null;
     }
     draw() {
         if (this.canvas.mouse.x && this.canvas.mouse.y) {
@@ -39,11 +40,17 @@ export class Tile {
     lift() {
         if (this.isLifted)
             return;
+        this.oldElevation = this.elevation;
+        this.elevation += 0.1;
         this.isLifted = true;
     }
     drop() {
         if (!this.isLifted)
             return;
+        if (this.oldElevation)
+            this.elevation = this.oldElevation;
+        else
+            this.elevation = 0;
         this.isLifted = false;
     }
 }

@@ -45,16 +45,19 @@ export class Tile {
     }
 
     private isLifted = false
+    private oldElevation: number | null = null
 
     lift() {
         if (this.isLifted) return
-        // this.elevation = 1
+        this.oldElevation = this.elevation
+        this.elevation += 0.1
         this.isLifted = true
     }
 
     drop() {
         if (!this.isLifted) return
-        // this.elevation = 0
+        if (this.oldElevation) this.elevation = this.oldElevation
+        else this.elevation = 0
         this.isLifted = false
     }
 }
