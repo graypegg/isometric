@@ -11,8 +11,8 @@ export class Camera {
 
     /* map a real canvas point to a projected plane */
     project(x: number, y: number, elevation: number = 0): Vector2D {
-        let rotatedX = (x * this.rotateTransform[0][0] - elevation) + (y * this.rotateTransform[1][0] - elevation)
-        let rotatedY = (x * this.rotateTransform[0][1] - elevation) + (y * this.rotateTransform[1][1] - elevation)
+        let rotatedX = ((x * this.rotateTransform[0][0]) - elevation) + ((y * this.rotateTransform[1][0]) - elevation)
+        let rotatedY = ((x * this.rotateTransform[0][1]) - elevation) + ((y * this.rotateTransform[1][1]) - elevation)
 
         let zoomedX = (rotatedX * this.zoomTransform[0][0]) + (rotatedY * this.zoomTransform[1][0]) + this.xOffset
         let zoomedY = (rotatedX * this.zoomTransform[0][1]) + (rotatedY * this.zoomTransform[1][1]) + this.yOffset
@@ -24,8 +24,8 @@ export class Camera {
         let unzoomedX = ((x - this.xOffset) * this.zoomTransformInv[0][0]) + ((y - this.yOffset) * this.zoomTransformInv[1][0])
         let unzoomedY = ((x - this.xOffset) * this.zoomTransformInv[0][1]) + ((y - this.yOffset) * this.zoomTransformInv[1][1])
 
-        let unrotatedX = ((unzoomedX + elevation) * this.rotateTransformInv[0][0]) + ((unzoomedY + elevation) * this.rotateTransformInv[1][0])
-        let unrotatedY = ((unzoomedX + elevation) * this.rotateTransformInv[0][1]) + ((unzoomedY + elevation) * this.rotateTransformInv[1][1])
+        let unrotatedX = ((unzoomedX + elevation * 2) * this.rotateTransformInv[0][0]) + ((unzoomedY + elevation * 2) * this.rotateTransformInv[1][0])
+        let unrotatedY = ((unzoomedX + elevation * 2) * this.rotateTransformInv[0][1]) + ((unzoomedY + elevation * 2) * this.rotateTransformInv[1][1])
 
         return [unrotatedX, unrotatedY]
     }
